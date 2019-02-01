@@ -41,6 +41,9 @@ class Game():
         self.make_stars()
         self.make_clouds()
 
+        self.delay = random.randint(0, 1)
+        self.pause = 0
+
         self.__main_loop()
 
     def stop(self):
@@ -82,9 +85,6 @@ class Game():
         if keys[pygame.K_SPACE]:
             if len(self.points) > 1:
                 self.make_star()
-                self.points.clear()
-                for star in self.stars:
-                    star.active = False
 
         if keys[pygame.K_r]:
             self.start()
@@ -92,6 +92,7 @@ class Game():
     def update(self):
         self.cursor.update()
         self.clouds.update(self.dt)
+        self.check_clouds()
         self.stars.update(self.dt, self.cursor)
         for star in self.stars:
             if star.life <= 0:
@@ -117,7 +118,7 @@ class Game():
 
     def make_clouds(self):
         self.clouds.empty()
-        for i in range(12):#(random.randint(2, 12)):
+        for i in range(random.randint(5, 12)):
             cloud = Cloud(self)
             self.clouds.add(cloud)
 
@@ -140,12 +141,20 @@ class Game():
         star.rect.center = centroid
         self.stars.add(star)
 
-    def make_cloud(self):
+        self.points.clear()
+        for star in self.stars:
+            star.active = False
+
+    def check_clouds(self):
         for cloud in self.clouds:
-            if cloud.offscreen:
+            if cloud.offscreen or cloud.dead:
                 self.clouds.remove(cloud)
-                cloud = Cloud(self)
-                self.clouds.add(cloud)
+                
+        self.pause += self.dt
+        if self.pause >= self.delay:
+            self.pause = 0
+            cloud = Cloud(self)
+            self.clouds.add(cloud)
 
   
 def main():

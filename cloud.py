@@ -20,16 +20,25 @@ class Cloud(pygame.sprite.Sprite):
                         self.screen.get_height() - self.radius)
 
         self.offscreen = False
-        self.max_speed = 100
+        self.dead = False
+        self.life = random.randint(10, 200)
+        self.tick = random.randint(1, 10)
+        self.max_speed = 80
         self.dx = random.randint(-(self.max_speed), self.max_speed)
         self.dy = random.randint(-(self.max_speed), self.max_speed)
+        (self.x, self.y) = self.rect.center
 
     def update(self, delta_time):
-        self.rect.x += self.dx * delta_time
-        self.rect.y += self.dy * delta_time
+        self.x += self.dx * delta_time
+        self.y += self.dy * delta_time
 
+        self.life -= self.tick * delta_time
+        self.image.set_alpha(self.life)
+        
         if (self.rect.left > self.screen.get_width() or
             self.rect.right < 0 or
             self.rect.top > self.screen.get_height() or
             self.rect.bottom < 0):
             self.offscreen = True
+
+        self.rect.center = (self.x, self.y)
