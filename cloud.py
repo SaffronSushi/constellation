@@ -1,18 +1,18 @@
 import pygame, random
 
 class Cloud(pygame.sprite.Sprite):
-    def __init__(self, game):
+    def __init__(self, game, pos, size=16):
         super(Cloud, self).__init__()
         self.screen = game.screen
-
-        self.size = random.randint(5, 100)
+        self.size = size
         self.radius = int(self.size / 2)
-        #self.points = int(100 / self.size)
+
         self.image = pygame.Surface((self.size, self.size))
-        #self.image.set_colorkey((0, 0, 0))
-        self.image.fill((255, 100, 100))
-        self.image.set_alpha(75)
         self.rect = self.image.get_rect()
+        self.image.set_colorkey((0, 0, 0))
+        pygame.draw.circle(self.image, (255, 100, 100),
+                           self.rect.center, self.radius)
+        self.image.set_alpha(75)
 
         self.rect.centerx = random.randint(self.radius,
                         self.screen.get_width() - self.radius)

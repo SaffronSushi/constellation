@@ -1,23 +1,19 @@
-import pygame, random
+import pygame
 
 class Star(pygame.sprite.Sprite):
-    def __init__(self, game, life):
+    def __init__(self, game, pos, size=8):
         super(Star, self).__init__()
         self.screen = game.screen
-        self.life = life
+        self.size = size
 
         self.color = ((255, 255, 255))
         self.active_clr = ((200, 200, 255))
-        self.size = int(self.life)
+        self.life = int(self.size)
         self.radius = int(self.size / 2)
         self.image = pygame.Surface((self.size, self.size))
         self.image.fill(self.color)
         self.rect = self.image.get_rect()
-        
-        self.rect.centerx = random.randint(self.radius,
-                        self.screen.get_width() - self.radius)
-        self.rect.centery = random.randint(self.radius,
-                        self.screen.get_height() - self.radius)
+        self.rect.center = pos
 
         self.clicked = False
         self.active = False
