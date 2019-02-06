@@ -7,12 +7,15 @@ class Cloud(pygame.sprite.Sprite):
         self.size = size
         self.radius = int(self.size / 2)
 
+        self.color = (255, 100, 100)
+        self.alpha = 0
+        
         self.image = pygame.Surface((self.size, self.size))
         self.rect = self.image.get_rect()
         self.image.set_colorkey((0, 0, 0))
-        pygame.draw.circle(self.image, (255, 100, 100),
+        pygame.draw.circle(self.image, self.color,
                            self.rect.center, self.radius)
-        self.image.set_alpha(75)
+        self.image.set_alpha(self.alpha)
 
         self.rect.centerx = random.randint(self.radius,
                         self.screen.get_width() - self.radius)
@@ -22,8 +25,8 @@ class Cloud(pygame.sprite.Sprite):
         self.offscreen = False
         self.dead = False
         self.life = random.randint(10, 200)
-        self.tick = random.randint(1, 10)
-        self.max_speed = 80
+        self.tick = random.uniform(0.01, 40)
+        self.max_speed = 10
         self.dx = random.randint(-(self.max_speed), self.max_speed)
         self.dy = random.randint(-(self.max_speed), self.max_speed)
         (self.x, self.y) = self.rect.center
@@ -32,13 +35,26 @@ class Cloud(pygame.sprite.Sprite):
         self.x += self.dx * delta_time
         self.y += self.dy * delta_time
 
+        # update transparency
+        if self.life > 128:
+            self.life = 128
+            
         self.life -= self.tick * delta_time
         self.image.set_alpha(self.life)
-        
+        self.fade_in()
+
+        # check if offscreen
         if (self.rect.left > self.screen.get_width() or
             self.rect.right < 0 or
             self.rect.top > self.screen.get_height() or
             self.rect.bottom < 0):
             self.offscreen = True
 
+        # update center
         self.rect.center = (self.x, self.y)
+
+    def fade_in(self):
+        self.alpha += 0.5
+        if self.alpha >= self.life:
+            self.alpha = self.life
+        self.image.set_alpha(self.alpha)
