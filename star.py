@@ -20,7 +20,7 @@ class Star(pygame.sprite.Sprite):
         self.dead = False
         self.clicked = False
         self.active = False
-        self.shrink_speed = .1
+        self.shrink_speed = .2
         self.min_size = 3
         self.max_size = 10
 
@@ -30,8 +30,6 @@ class Star(pygame.sprite.Sprite):
         self.set_size()
         self.check_events(cursor)
         self.set_color()
-        self.fade_in()
-
 
     def set_size(self):
         shrink_amt = self.dt * self.shrink_speed
@@ -40,10 +38,11 @@ class Star(pygame.sprite.Sprite):
 
         # check size restrictions
         if self.size < self.min_size:
-            self.size = self.min_size
-            self.dead = True
+            self.fade_out()
         elif self.size > self.max_size:
-            selfmsize = self.max_size
+            self.size = self.max_size
+        else:
+            self.fade_in()
 
         # scale image
         self.image = pygame.transform.scale(self.image,
@@ -66,6 +65,13 @@ class Star(pygame.sprite.Sprite):
         if self.alpha < 255:
             self.alpha += 4
             self.image.set_alpha(self.alpha)
+
+    def fade_out(self):
+        if self.alpha > 0:
+            self.alpha -= 4
+            self.image.set_alpha(self.alpha)
+        else:
+            self.dead = True
 
     def set_color(self):
         if self.active:

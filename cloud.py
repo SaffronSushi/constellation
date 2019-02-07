@@ -23,7 +23,8 @@ class Cloud(pygame.sprite.Sprite):
                         self.screen.get_height() - self.radius)
 
         self.dead = False
-        self.life = random.randint(10, 200)
+        self.max_life = 200
+        self.life = random.randint(10, self.max_life)
         self.tick = random.uniform(0.01, 40)
         self.max_speed = 10
         self.dx = random.randint(-(self.max_speed), self.max_speed)
@@ -35,8 +36,8 @@ class Cloud(pygame.sprite.Sprite):
         self.y += self.dy * delta_time
 
         # update transparency
-        if self.life > 128:
-            self.life = 128
+        if self.life > self.max_life:
+            self.life = self.max_life
             
         self.life -= self.tick * delta_time
         self.image.set_alpha(self.life)
