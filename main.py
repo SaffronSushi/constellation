@@ -18,24 +18,14 @@ class Label(pygame.sprite.Sprite):
         super(Label, self).__init__()
         self.screen = game.screen
 
-        self.text = "0"
+        self.text = ""
         self.font = pygame.font.SysFont(None, 40)
-        self.fg_color = ((0x00, 0x00, 0x00))
-        self.bg_color = ((0xFF, 0xFF, 0xFF))
-        self.center = (100, 100)
-        self.size = (150, 30)
 
-        self.image = pygame.Surface(self.size)
-        self.image.fill(self.bg_color)
+    def update(self, text):
+        self.image = self.font.render(text, True, (255, 255, 255))
         self.rect = self.image.get_rect()
-
-    def update(self):
-        font_surface = self.font.render(self.text, True,
-                                self.fg_color, self.bg_color)
-        font_rect = font_surface.get_rect()
-        font_rect.center = self.rect.center
-
-        self.image.blit(font_surface, font_rect)
+        self.rect.right = self.screen.get_width()
+        
 
 class Game():
     def __init__(self):
@@ -44,10 +34,10 @@ class Game():
         self.WINDOWED = 1
         self.DISPLAY_MODE = self.WINDOWED
 
-        pygame.display.set_caption("constellation")
+        pygame.display.set_caption("click to select, space to enter")
         self.res = (800, 600)
         self.set_display()
-        self.framerate = 1000
+        self.framerate = 60
 
         self.bg_color = (20, 20, 80)
         self.bg = pygame.Surface(self.screen.get_size())
@@ -58,18 +48,15 @@ class Game():
         self.clouds = pygame.sprite.Group()
 
         self.scoreboard = Label(self)
-        self.scoreboard.rect.right = self.screen.get_width()
         self.labels = pygame.sprite.Group(self.scoreboard)
-        self.score = 0
         
-        # points as in coordinates, not score
-        self.points = []
-
+        self.active_stars = {}
+        
     def start(self):
         self.running = True
         self.clock = pygame.time.Clock()
         self.start_stars()
-        #self.start_clouds()
+        self.score = 0
 
         self.cloud_timer = 0
         self.cloud_delay = 0
@@ -84,11 +71,16 @@ class Game():
 
     def __main_loop(self):
         while self.running:
+            # get delta time
             self.dt = self.clock.tick(self.framerate) / 1000
+            # convert timer to seconds
+            self.timer = pygame.time.get_ticks() / 1000
+        
             pygame.mouse.set_visible(False)
 
             self.check_events()
             self.update()
+            print(self.timer)
 
     def set_display(self):
         """ creates either a fullscreen or
@@ -125,7 +117,7 @@ class Game():
         self.cursor.update()
         self.update_clouds()
         self.update_stars()
-        self.labels.update()
+        self.labels.update(str(self.score))
 
         # draw
         self.screen.blit(self.bg, (0, 0))
@@ -134,6 +126,7 @@ class Game():
         self.stars.draw(self.screen)
         self.screen.blit(self.cursor.image, self.cursor.rect)
         self.labels.draw(self.screen)
+        print(len(self.active_stars))
 
         pygame.display.flip()
 
@@ -168,7 +161,7 @@ class Game():
             stars at start of game
         """
         self.stars.empty()
-        for i in range(random.randint(10, 20)):
+        for i in range(random.randint(8, 16)):
             self.make_star("random")
 
     def start_clouds(self):
@@ -184,20 +177,43 @@ class Game():
             current state
         """
         self.stars.update(self.dt, self.cursor)
-        self.star_timer += self.dt
-
+        
+        # add active stars to list
         for star in self.stars:
-            if star.size <= 0:
-                for point in self.points:
-                    if point == star.rect.center:
-                        self.points.remove(point)
-                self.stars.remove(star)
+            if star.active:
+                if star not in self.active_stars:
+                    self.active_stars.update({star:star.rect.center})
 
-        # randomly make new stars
-        if self.star_timer >= self.star_delay:
-            self.star_timer = 0
-            self.star_delay = random.uniform(8, 16)
-            self.make_star("random", size="random")
+        # remove dead stars
+        for star in self.stars:
+            if star.dead:
+                if star in self.active_stars:
+                    self.active_stars.pop(star)
+                self.stars.remove(star)
+            # REMOVE STARS THAT ARE OVERSHADOWED BY LARGER STARS
+
+        # make new stars less frequently based on timer
+        # BEING TAUGHT WORDS THE FIRST TIME
+        if self.timer < 10:
+            self.star_delay = 2
+            self.star_timer += self.dt
+            if self.star_timer >= self.star_delay:
+                self.star_timer = 0
+                self.make_star("random", size=4)
+                
+        elif self.timer > 50 and self.timer < 60:
+            self.star_delay = 7
+            self.star_timer += self.dt
+            if self.star_timer >= self.star_delay:
+                self.star_timer = 0
+                self.make_star("random", size="random")
+
+        elif self.timer > 50:
+            self.star_delay = 15
+            self.star_timer += self.dt
+            if self.star_timer >= self.star_delay:
+                self.star_timer = 0
+                self.make_star("random", size="random")
 
     def update_clouds(self):
         """ maintains clouds based on
@@ -207,9 +223,9 @@ class Game():
         self.clouds.update(self.dt)
         self.cloud_timer += self.dt
 
-        # remove if dead or offscreen
+        # remove if dead/offscreen
         for cloud in self.clouds:
-            if cloud.offscreen or cloud.dead:
+            if cloud.dead:
                 self.clouds.remove(cloud)
 
         # create new cloud based on timer
@@ -226,45 +242,68 @@ class Game():
         """ draws lines onscreen based on
             which stars are currently active
         """
-        for star in self.stars:
-            if star.active:
-                if star.rect.center not in self.points:
-                    self.points.append(star.rect.center)
-
-        if len(self.points) > 1:
-            pygame.draw.lines(self.screen, (200, 200, 255),
-                                  True, self.points, 3)
+        if len(self.active_stars) > 1:
+            points = tuple(self.active_stars.values())
+            pygame.draw.lines(self.screen, (200, 200, 255), True,
+                              points, 2)
 
     def submit_stars(self):
         """ creates a new star based on
             currently selected stars
+
+            - getting points make stars grow
+              and clouds fade
+
+            - the amount that stars grow depends
+              on the number and size of stars
+              submitted, as well as their
+              proximity to nearby clouds
+
+            - the amount that clouds fade depends
+              on the above as well, this also
+              applies to points gained
+
+            - amount of points gained is not
+              affected by the transparency
+              of the cloud
+
+            - if multiple stars are used in
+              a submission, a new star will
+              be created at the centroid of
+              those stars, ONLY if points
+              are gained
         """
         # find centroid of all active stars
-        if len(self.points) > 0:
-            if len(self.points) < 2:
-                centroid = self.points[0]
+        if self.active_stars:
+            if len(self.active_stars) < 2:
+                centroid = self.active_stars.values()
                 
-            if len(self.points) > 1:
-                x = [p[0] for p in self.points]
-                y = [p[1] for p in self.points]
-                centroid = (sum(x) / len(self.points),
-                            sum(y) / len(self.points))
-                size = (16/ len(self.points))
+            elif len(self.active_stars) > 1:
+                # find centroid of all points
+                points = self.active_stars.values()
+                x = [p[0] for p in points]
+                y = [p[1] for p in points]
+                centroid = (sum(x) / len(points),
+                            sum(y) / len(points))
+                # create new star at center point
+                size = (16/ len(points))
                 self.make_star(centroid, size)
 
             for cloud in self.clouds:
                 near_clouds = 0
-                
                 distance = int(math.hypot(centroid[0] - cloud.rect.centerx,
                                   centroid[1] - cloud.rect.centery))
-                if distance < 100:
+                if distance < 50:
                     near_clouds += 1
-                    for star in self.stars:
-                        if star.rect.center == centroid:
-                            star.size += 2
+                    for star in self.active_stars:
+                        self.score += int(star.size)
+                        cloud.life -= 20 / (distance + len(self.active_stars)
+                                            * star.size)
+                    
+                        star.size += 10 / len(self.active_stars)
 
         # deactivate other active stars
-        self.points.clear()
+        self.active_stars.clear()
         for star in self.stars:
             star.active = False
 

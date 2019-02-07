@@ -11,36 +11,43 @@ class Star(pygame.sprite.Sprite):
         self.alpha = 0
 
         self.radius = int(self.size / 2)
-        self.image = pygame.Surface((self.size, self.size))
+        self.image = pygame.Surface((int(self.size), int(self.size)))
         self.image.fill(self.color)
         self.image.set_alpha(self.alpha)
         self.rect = self.image.get_rect()
         self.rect.center = pos
 
+        self.dead = False
         self.clicked = False
         self.active = False
+        self.shrink_speed = .1
+        self.min_size = 3
+        self.max_size = 10
 
     def update(self, delta_time, cursor):
         self.dt = delta_time
-        self.tick = self.dt / 3
 
         self.set_size()
         self.check_events(cursor)
-        if self.active:
-            self.image.fill(self.active_clr)
-        else:
-            self.image.fill(self.color)
+        self.set_color()
         self.fade_in()
 
 
     def set_size(self):
+        shrink_amt = self.dt * self.shrink_speed
         old_center = self.rect.center
-        self.size -= self.tick
-        if self.size < 0:
-            self.size = 0
-            
-        self.image = pygame.Surface((self.size, self.size))
-        self.image.fill((255, 255, 255))
+        self.size -= shrink_amt
+
+        # check size restrictions
+        if self.size < self.min_size:
+            self.size = self.min_size
+            self.dead = True
+        elif self.size > self.max_size:
+            selfmsize = self.max_size
+
+        # scale image
+        self.image = pygame.transform.scale(self.image,
+                                (int(self.size), int(self.size)))
         self.rect = self.image.get_rect()
         self.rect.center = old_center
 
@@ -56,5 +63,12 @@ class Star(pygame.sprite.Sprite):
                     self.active = True
 
     def fade_in(self):
-        self.alpha += 0.3
-        self.image.set_alpha(self.alpha)
+        if self.alpha < 255:
+            self.alpha += 4
+            self.image.set_alpha(self.alpha)
+
+    def set_color(self):
+        if self.active:
+            self.image.fill(self.active_clr)
+        else:
+            self.image.fill(self.color)

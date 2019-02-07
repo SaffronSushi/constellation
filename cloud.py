@@ -22,7 +22,6 @@ class Cloud(pygame.sprite.Sprite):
         self.rect.centery = random.randint(self.radius,
                         self.screen.get_height() - self.radius)
 
-        self.offscreen = False
         self.dead = False
         self.life = random.randint(10, 200)
         self.tick = random.uniform(0.01, 40)
@@ -48,7 +47,7 @@ class Cloud(pygame.sprite.Sprite):
             self.rect.right < 0 or
             self.rect.top > self.screen.get_height() or
             self.rect.bottom < 0):
-            self.offscreen = True
+            self.dead = True
 
         # update center
         self.rect.center = (self.x, self.y)
