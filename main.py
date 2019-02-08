@@ -1,4 +1,4 @@
-import pygame, random, math
+import pygame, random, math, sys
 from star import Star
 from cloud import Cloud
 
@@ -10,19 +10,28 @@ class Cursor(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         pygame.draw.rect(self.image, (200, 200, 255), self.rect, 3)
 
+        self.alpha = 0
+
     def update(self):
         self.rect.center = pygame.mouse.get_pos()
+        self.fade_in()
+
+    def fade_in(self):
+        self.alpha += 4
+        if self.alpha > 255:
+            self.alpha = 255
+        self.image.set_alpha(self.alpha)
 
 class Label(pygame.sprite.Sprite):
-    def __init__(self, game):
+    def __init__(self, game, text = "", color=(255, 255, 255)):
         super(Label, self).__init__()
         self.screen = game.screen
-
-        self.text = ""
+        self.text = text
+        self.color = color
         self.font = pygame.font.SysFont(None, 40)
 
     def update(self, text):
-        self.image = self.font.render(text, True, (255, 255, 255))
+        self.image = self.font.render(text, True, self.color)
         self.rect = self.image.get_rect()
         self.rect.right = self.screen.get_width()
 
@@ -32,35 +41,51 @@ class Label(pygame.sprite.Sprite):
 class Game():
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()
+        
         self.FULLSCREEN = 0
         self.WINDOWED = 1
         self.DISPLAY_MODE = self.WINDOWED
 
-        pygame.display.set_caption("click to select, space to enter")
+        pygame.display.set_caption("mouse, LMB")
+        self.icon = pygame.image.load("images/const_logo.bmp")
+        pygame.display.set_icon(self.icon)
         self.res = (800, 600)
         self.set_display()
+        self.screen_rect = self.screen.get_rect()
         self.framerate = 60
 
         self.bg_color = (20, 20, 80)
         self.bg = pygame.Surface(self.screen.get_size())
         self.bg.fill(self.bg_color)
 
+        self.fg_color = (255, 255, 255)
+        self.fg_alpha = 255
+        self.fg = pygame.Surface(self.screen.get_size())
+        self.fg.fill(self.fg_color)
+
+        self.scoreboard = Label(self)
+        self.start_button = Label(self, text="START")
+        self.start_button.rect = self.screen_rect.center
+        self.labels = pygame.sprite.Group(self.scoreboard)
+
         self.cursor = Cursor()
         self.stars = pygame.sprite.Group()
         self.clouds = pygame.sprite.Group()
-
-        self.scoreboard = Label(self)
-        self.labels = pygame.sprite.Group(self.scoreboard)
         
         self.active_stars = []
         self.active_points =[]
+
+        # load audio
+        pygame.mixer.music.load("audio/bensound-sadday.mp3")
+        pygame.mixer.music.set_volume(0.2)
         
     def start(self):
         self.running = True
         self.clock = pygame.time.Clock()
         # use the following start functions for testing 
         #self.start_clouds
-        self.start_stars()
+        #self.start_stars()
         self.score = 0
 
         self.cloud_timer = 0
@@ -69,23 +94,34 @@ class Game():
         self.star_timer = 0
         self.star_delay = 0
 
+        #self.__intro()
+        #self.running = True
+
+        #pygame.mixer.music.play(0)
         self.__main_loop()
 
     def stop(self):
-        self.running = False
+        sys.exit()
+
+    def __intro(self):
+        while self.running:
+            self.screen.blit(self.fg, (0, 0))
+            pygame.display.flip()
 
     def __main_loop(self):
         while self.running:
             # get delta time
             self.dt = self.clock.tick(self.framerate) / 1000
+
             # convert timer to seconds
             self.timer = pygame.time.get_ticks() / 1000
-            print(int(self.timer))
-        
+            #print(int(self.timer))
+            
             pygame.mouse.set_visible(False)
 
             self.check_events()
             self.update()
+
 
     def set_display(self):
         """ creates either a fullscreen or
@@ -97,12 +133,20 @@ class Game():
         else:
             self.screen = pygame.display.set_mode(self.res)
 
+    def fade(self):
+        if self.timer < 5:
+            self.fg_alpha -= 100 * self.dt
+            self.fg.set_alpha(self.fg_alpha)
+            self.screen.blit(self.fg, (0, 0))            
+
     def check_events(self):
         keys = pygame.key.get_pressed()
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.running = False
+                self.stop()
+            #elif event.type == pygame.MOUSEBUTTONDOWN:
+             #   self.submit_stars()
 
         if keys[pygame.K_f]:
             if self.DISPLAY_MODE == self.FULLSCREEN:
@@ -111,13 +155,13 @@ class Game():
                 self.DISPLAY_MODE = self.FULLSCREEN
             self.set_display()
 
-        if keys[pygame.K_SPACE]:
+        if pygame.mouse.get_pressed() == (1, 0, 0):
             self.submit_stars()
 
         if keys[pygame.K_r]:
             self.start()
 
-    def update(self):        
+    def update(self):
         # update
         self.cursor.update()
         self.update_clouds()
@@ -129,16 +173,14 @@ class Game():
         self.draw_lines()
         self.stars.draw(self.screen)
         self.screen.blit(self.cursor.image, self.cursor.rect)
-        """
-        if self.timer > 30:
+
+        if self.timer > 20:
             self.labels.update(str(self.score))
             self.labels.draw(self.screen)
         else:
             self.score = 0
-        """
-        self.labels.update(str(self.score))
-        self.labels.draw(self.screen)
 
+        self.fade()
         pygame.display.flip()
 
     def make_star(self, pos, size="random"):
@@ -154,6 +196,8 @@ class Game():
             
         star = Star(self, pos, size)
         self.stars.add(star)
+
+        return star
 
     def make_cloud(self, pos, size="random"):
         if size == "random":
@@ -308,7 +352,8 @@ class Game():
         # find centroid of all active stars
         if self.active_stars:
             if len(self.active_stars) < 2:
-                centroid = self.active_stars[0].rect.center
+                centroid = self.active_points[0]
+                center_star = self.active_stars[0]
                 
             elif len(self.active_stars) > 1:
                 # find centroid of all points
@@ -316,25 +361,27 @@ class Game():
                 y = [p[1] for p in self.active_points]
                 centroid = (sum(x) / len(self.active_points),
                             sum(y) / len(self.active_points))
+                center_star = self.make_star(centroid, size=4)
 
+            # check for contact with clouds
             for cloud in self.clouds:
                 near_clouds = 0
+                '''
                 distance = int(math.hypot(centroid[0] - cloud.rect.centerx,
                                   centroid[1] - cloud.rect.centery))
-                if distance < 50:
-                    cloud.life -= 20
+                #if distance < cloud.radius:
+                '''
+                if pygame.sprite.collide_circle(center_star, cloud):
                     near_clouds += 1
-                    unit = (10 / (near_clouds + len(self.active_stars)))
-                    self.score += int(unit)
-                    
-                    for star in self.active_stars:
-                        star.size += unit
+                    print("H")
 
-                if centroid not in self.active_points:
-                    # new words are always fragile
-                    size = 4
-                    self.make_star(centroid, size)
-                        
+                    # update clouds, stars and score
+                    cloud.life -= 40
+                    # POINTS EARNED GOES UP WITH AGE (credibility?)
+                    self.score += int(self.timer /
+                            10 + near_clouds + len(self.active_stars))
+                    for star in self.active_stars:
+                        star.size += 2
 
         # deactivate other active stars
         self.active_stars.clear()
