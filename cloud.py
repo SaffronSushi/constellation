@@ -23,26 +23,29 @@ class Cloud(pygame.sprite.Sprite):
                         self.screen.get_height() - self.radius)
 
         self.dead = False
+        self.min_life = 30
         self.max_life = 200
-        self.life = random.randint(10, self.max_life)
+        self.life = random.randint(self.min_life, self.max_life)
         self.tick = random.uniform(0.01, 40)
         self.max_speed = 10
-        self.dx = random.randint(-(self.max_speed), self.max_speed)
-        self.dy = random.randint(-(self.max_speed), self.max_speed)
+        self.dx = random.uniform(-(self.max_speed), self.max_speed)
+        self.dy = random.uniform(-(self.max_speed), self.max_speed)
         (self.x, self.y) = self.rect.center
 
     def update(self, delta_time):
         self.x += self.dx * delta_time
         self.y += self.dy * delta_time
 
-        # update transparency
-        if self.life > self.max_life:
-            self.life = self.max_life
-            
         self.life -= self.tick * delta_time
-        self.image.set_alpha(self.life)
-        self.fade_in()
 
+        # update transparency
+        if self.life < self.min_life:
+            self.fade_out()
+        elif self.life > self.max_life:
+            self.life = self.max_life
+        else:
+            self.fade_in()
+            
         # check if offscreen
         if (self.rect.left > self.screen.get_width() or
             self.rect.right < 0 or
@@ -58,3 +61,12 @@ class Cloud(pygame.sprite.Sprite):
         if self.alpha >= self.life:
             self.alpha = self.life
         self.image.set_alpha(self.alpha)
+
+    def fade_out(self):
+        self.alpha -= 2
+        if self.alpha <= 0:
+            self.alpha = 0
+            self.dead = True
+
+        else:
+            self.image.set_alpha(self.alpha)

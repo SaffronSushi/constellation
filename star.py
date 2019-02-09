@@ -20,7 +20,7 @@ class Star(pygame.sprite.Sprite):
         self.dead = False
         self.clicked = False
         self.active = False
-        self.shrink_speed = .2
+        self.shrink_speed = .07
         self.min_size = 3
         self.max_size = 10
 

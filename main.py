@@ -17,7 +17,7 @@ class Cursor(pygame.sprite.Sprite):
         self.fade_in()
 
     def fade_in(self):
-        self.alpha += 4
+        self.alpha += 0.2
         if self.alpha > 255:
             self.alpha = 255
         self.image.set_alpha(self.alpha)
@@ -84,8 +84,8 @@ class Game():
         self.running = True
         self.clock = pygame.time.Clock()
         # use the following start functions for testing 
-        #self.start_clouds
-        #self.start_stars()
+        self.start_clouds
+        self.start_stars()
         self.score = 0
 
         self.cloud_timer = 0
@@ -253,13 +253,15 @@ class Game():
 
         # make new stars less frequently based on timer
         # BEING TAUGHT WORDS THE FIRST TIME
-        if self.timer > 7 and self.timer < 30:
-            self.star_delay = 2
+        # LEARN TO USE WORDS INDIVIDUALLY
+        if self.timer > 5 and self.timer < 40:
+            self.star_delay = 5
             self.star_timer += self.dt
             if self.star_timer >= self.star_delay:
                 self.star_timer = 0
                 self.make_star("random", size=4)
                 
+        # MORE FREQUENT, LEARN TO STRING TOGETHER
         elif self.timer > 30 and self.timer < 60:
             self.star_delay = 7
             self.star_timer += self.dt
@@ -286,7 +288,7 @@ class Game():
         for cloud in self.clouds:
             if cloud.dead:
                 self.clouds.remove(cloud)
-
+        '''
         # create new clouds based on timer
         # NEW PERCEPTIONS AT BEGINNING
         if self.timer > 3 and self.timer < 7:
@@ -299,8 +301,8 @@ class Game():
                     pos = (random.randint(0, self.screen.get_width()),
                            random.randint(0, self.screen.get_height()))
                     self.make_cloud(pos, size)
-
-        elif self.timer > 7:
+        '''
+        if self.timer > 10:
             if self.cloud_timer >= self.cloud_delay:
                 self.cloud_timer = 0
                 self.cloud_delay = random.uniform(0, 1)
@@ -349,9 +351,11 @@ class Game():
               those stars, ONLY if points
               are gained
         """
+        collided = False
+        
         # find centroid of all active stars
         if self.active_stars:
-            if len(self.active_stars) < 2:
+            if len(self.active_stars) == 1:
                 centroid = self.active_points[0]
                 center_star = self.active_stars[0]
                 
@@ -372,16 +376,19 @@ class Game():
                 #if distance < cloud.radius:
                 '''
                 if pygame.sprite.collide_circle(center_star, cloud):
+                    collided = True
                     near_clouds += 1
-                    print("H")
-
+                    
                     # update clouds, stars and score
                     cloud.life -= 40
+                    
                     # POINTS EARNED GOES UP WITH AGE (credibility?)
                     self.score += int(self.timer /
                             10 + near_clouds + len(self.active_stars))
-                    for star in self.active_stars:
-                        star.size += 2
+                    
+            for star in self.active_stars:
+                if collided:
+                    star.size += 2
 
         # deactivate other active stars
         self.active_stars.clear()
