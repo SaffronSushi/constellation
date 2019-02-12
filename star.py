@@ -18,21 +18,32 @@ class Star(pygame.sprite.Sprite):
         self.rect.center = pos
 
         self.dead = False
-        self.clicked = False
+        self.hit = False
         self.active = False
         self.shrink_speed = .07
         self.min_size = 3
-        self.max_size = 10
+        self.max_size = 20
 
-        self.active_time = 6
+        self.active_time = 5
         self.timer = 0
 
-    def update(self, delta_time, cursor):
+    def update(self, delta_time, cursor, stars):
         self.dt = delta_time
+
+        if self.active:
+            self.image.fill(self.active_clr)
+            self.timer += self.dt
+            for star in stars:
+                if star.hit:
+                    self.timer = 0
+            if self.timer >= self.active_time:
+                self.active = False
+                self.timer = 0
+        else:
+            self.image.fill(self.color)
 
         self.set_size()
         self.check_events(cursor)
-        self.set_color()
 
     def set_size(self):
         shrink_amt = self.dt * self.shrink_speed
@@ -47,26 +58,18 @@ class Star(pygame.sprite.Sprite):
         else:
             self.fade_in()
 
-        # scale image
-        self.image = pygame.transform.scale(self.image,
-                                (int(self.size), int(self.size)))
-        self.rect = self.image.get_rect()
-        self.rect.center = old_center
+            # scale image
+            self.image = pygame.transform.scale(self.image,
+                                    (int(self.size), int(self.size)))
+            self.rect = self.image.get_rect()
+            self.rect.center = old_center
 
     def check_events(self, cursor):
-        """
-        if pygame.mouse.get_pressed() == (1, 0, 0):
-            if pygame.sprite.collide_rect(cursor, self):
-                self.clicked = True
-
-        if self.clicked == True:
-            if pygame.mouse.get_pressed() == (0, 0, 0):
-                self.clicked = False
-                if pygame.sprite.collide_rect(cursor, self):
-                    self.active = True
-        """
         if pygame.sprite.collide_rect(cursor, self):
             self.active = True
+            self.hit = True
+        else:
+            self.hit = False
 
         if pygame.mouse.get_pressed() == (1, 0, 0):
             if pygame.sprite.collide_rect(cursor, self):
@@ -83,9 +86,3 @@ class Star(pygame.sprite.Sprite):
             self.image.set_alpha(self.alpha)
         else:
             self.dead = True
-
-    def set_color(self):
-        if self.active:
-            self.image.fill(self.active_clr)
-        else:
-            self.image.fill(self.color)
