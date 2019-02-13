@@ -24,7 +24,7 @@ class Star(pygame.sprite.Sprite):
         self.min_size = 3
         self.max_size = 20
 
-        self.active_time = 5
+        self.active_time = 1.5
         self.timer = 0
 
     def update(self, delta_time, cursor, stars):
@@ -71,10 +71,6 @@ class Star(pygame.sprite.Sprite):
         else:
             self.hit = False
 
-        if pygame.mouse.get_pressed() == (1, 0, 0):
-            if pygame.sprite.collide_rect(cursor, self):
-                self.active = False
-
     def fade_in(self):
         if self.alpha < 255:
             self.alpha += 4
@@ -85,4 +81,5 @@ class Star(pygame.sprite.Sprite):
             self.alpha -= 4
             self.image.set_alpha(self.alpha)
         else:
+            self.active = False
             self.dead = True

@@ -17,10 +17,7 @@ class Cloud(pygame.sprite.Sprite):
                            self.rect.center, self.radius)
         self.image.set_alpha(self.alpha)
 
-        self.rect.centerx = random.randint(self.radius,
-                        self.screen.get_width() - self.radius)
-        self.rect.centery = random.randint(self.radius,
-                        self.screen.get_height() - self.radius)
+        self.rect.center = pos
 
         self.dead = False
         self.min_life = 30
@@ -33,8 +30,9 @@ class Cloud(pygame.sprite.Sprite):
         (self.x, self.y) = self.rect.center
 
     def update(self, delta_time):
-        self.x += self.dx * delta_time
-        self.y += self.dy * delta_time
+        self.dt = delta_time
+        self.x += self.dx * self.dt
+        self.y += self.dy * self.dt
 
         self.life -= self.tick * delta_time
 
@@ -57,13 +55,13 @@ class Cloud(pygame.sprite.Sprite):
         self.rect.center = (self.x, self.y)
 
     def fade_in(self):
-        self.alpha += 0.5
+        self.alpha += 50 * self.dt
         if self.alpha >= self.life:
             self.alpha = self.life
         self.image.set_alpha(self.alpha)
 
     def fade_out(self):
-        self.alpha -= 2
+        self.alpha -= 200 * self.dt
         if self.alpha <= 0:
             self.alpha = 0
             self.dead = True

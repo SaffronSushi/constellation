@@ -1,6 +1,8 @@
-import pygame, random, math, sys
+import pygame, random, math, sys, time
 from star import Star
 from cloud import Cloud
+# Start
+# End
 
 class Cursor(pygame.sprite.Sprite):
     def __init__(self):
@@ -8,7 +10,7 @@ class Cursor(pygame.sprite.Sprite):
         self.size = (16, 16)
         self.image = pygame.Surface(self.size)
         self.image.set_colorkey((0, 0, 0))
-        self.color = (175, 175, 255)
+        self.color = (200, 200, 240)
 
         self.default_img = pygame.Surface(self.size)
         self.default_img.set_colorkey((0, 0, 0))
@@ -28,24 +30,29 @@ class Cursor(pygame.sprite.Sprite):
             self.image = self.default_img
     
         self.rect.center = pygame.mouse.get_pos()
+        self.fade_in()
 
     def fade_in(self):
-        self.alpha += 0.2
-        if self.alpha > 255:
-            self.alpha = 255
+        self.alpha += .5
+        if self.alpha > 200:
+            self.alpha = 200
         self.image.set_alpha(self.alpha)
 
 class Label(pygame.sprite.Sprite):
-    def __init__(self, game, text = "", color=(255, 255, 255)):
+    def __init__(self, game, text = "", size=40, pos=(0, 0), color=(255, 255, 255)):
         super(Label, self).__init__()
         self.screen = game.screen
         self.text = text
+        self.pos = pos
         self.color = color
-        self.font = pygame.font.SysFont(None, 40)
+        self.font = pygame.font.SysFont(None, size)
+
+        self.timer = 0
 
     def update(self):
         self.image = self.font.render(self.text, True, self.color)
         self.rect = self.image.get_rect()
+        self.rect.center = self.pos
 
     def fade_in(self):
         self.image = self.image.set_alpha(self.alpha)
@@ -72,7 +79,7 @@ class Game():
         self.bg = pygame.Surface(self.screen.get_size())
         self.bg.fill(self.bg_color)
 
-        self.fg_color = (255, 255, 255)
+        self.fg_color = (240, 240, 240)
         self.fg_alpha = 255
         self.fg = pygame.Surface(self.screen.get_size())
         self.fg.fill(self.fg_color)
@@ -80,6 +87,7 @@ class Game():
         self.cursor = Cursor()
         self.stars = pygame.sprite.Group()
         self.clouds = pygame.sprite.Group()
+        self.labels = pygame.sprite.Group()
         
         self.active_stars = []
         self.active_points =[]
@@ -87,14 +95,42 @@ class Game():
         # load audio
         pygame.mixer.music.load("audio/bensound-sadday.mp3")
         pygame.mixer.music.set_volume(0.2)
-        
+
+        self.sound_effect = pygame.mixer.Sound("audio/point_sound.wav")
+
+        # create timestamps for different game events
+        self.ts = {
+            "game_start":0,
+            "game_end":295,
+            
+            "fade_in_end":10,
+            "fade_out_start":260,
+            
+            "star_1_start":0,
+            "star_1_end":30,
+            "star_2_start":30,
+            "star_2_end":175,
+            "star_3_start":175,
+            
+            "cloud_1_start":0,
+            "cloud_1_end":20,
+            "cloud_2_start":20,
+            "cloud_2_end":200,
+            "cloud_3_start":200,
+            
+            "score_start":50,
+            "score_end":265,
+            
+            "end_event":265
+            }
+
     def start(self):
         while True:
             self.stars.empty()
             self.clouds.empty()
             # use the following start functions for testing 
             #self.test_clouds()
-            self.test_stars()
+            #self.test_stars()
             
             self.clock = pygame.time.Clock()
 
@@ -116,12 +152,13 @@ class Game():
 
     def intro(self):
         font = pygame.font.SysFont(None, 25)
-        text = ("The best and most beautiful things in the world",
+        text = ("",
+                "The best and most beautiful things in the world",
                 "cannot be seen or event touched.",
                 "They must be felt with the heart.",
                 "- Helen Keller",
                 "",
-                "Is it really possible to someone else what one feels?",
+                "Is it really possible to tell someone else what one feels?",
                 "- Leo Tolstoy",
                 "",
                 "For last year's words belong to last year's language",
@@ -154,27 +191,35 @@ class Game():
                        "PRESS ENTER TO START")
         labels_2 = []
         for line in control_text:
-            label = font.render(line, 1, (0, 0, 0))
+            label = font.render(line, 1, self.bg_color)
             labels_2.append(label)
 
-
+        self.fg_alpha = 255
+        self.fg.set_alpha(self.fg_alpha)
 
         running = True
         while running:
             self.dt = self.clock.tick(self.framerate) / 1000
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    sys.exit()
+                    self.stop()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.stop()
+                    elif event.key == pygame.K_f:
+                        if self.DISPLAY_MODE == self.FULLSCREEN:
+                            self.DISPLAY_MODE = self.WINDOWED
+                        else:
+                            self.DISPLAY_MODE = self.FULLSCREEN
+                        self.set_display()
                     elif event.key == pygame.K_RETURN:
                         running = False
-                        self.timer = 0
-    
+
+            self.start_ticks = pygame.time.get_ticks() / 1000
+            
             self.screen.blit(self.fg, (0, 0))
             for i in range(len(labels_1)):
-                self.screen.blit(labels_1[i], (40, 20*i))
+                self.screen.blit(labels_1[i], (20, 20*i))
             for i in range(len(labels_2)):
                 self.screen.blit(labels_2[i], (550, 20*i))
             pygame.display.flip()
@@ -182,27 +227,26 @@ class Game():
     def __main_loop(self):
         self.scoreboard = Label(self)
         
-        running = True
-        while running:
+        self.main_running = True
+        while self.main_running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.stop()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        running = False
+                        self.main_running = False
 
             pygame.mouse.set_visible(False)
             # get delta time
             self.dt = self.clock.tick(self.framerate) / 1000
             # convert timer to seconds
-            self.timer = pygame.time.get_ticks() / 1000
+            # reset timer based on intro timer
+            self.timer = pygame.time.get_ticks() / 1000 - self.start_ticks
             #print(int(self.timer))
+            print(int(self.timer))
             
             self.check_events()
             self.update()
-
-    def ending(self):
-        running = True
 
     def set_display(self):
         """ creates either a fullscreen or
@@ -214,11 +258,27 @@ class Game():
         else:
             self.screen = pygame.display.set_mode(self.res)
 
-    def fade_in(self):
-        if self.fg_alpha > 0:
-            self.fg_alpha -= 100 * self.dt
+    def fade_screen(self):
+        """ changes foreground alpha based
+            on different time stamps
+        """
+        # fade in
+        if self.timer < self.ts["fade_in_end"]:
+            self.fg_alpha -= 70 * self.dt
+            if self.fg_alpha < 0:
+                self.fg_alpha = 0
             self.fg.set_alpha(self.fg_alpha)
-            self.screen.blit(self.fg, (0, 0))            
+            self.screen.blit(self.fg, (0, 0))
+            
+        # fade out and end game
+        # game lasts 300 seconds
+        elif self.timer > self.ts["fade_out_start"]:
+            # roughly 40 second fade time
+            self.fg_alpha += 10 * self.dt
+            if self.fg_alpha >= 255:
+                self.fg_alpha = 255
+            self.fg.set_alpha(self.fg_alpha)
+            self.screen.blit(self.fg, (0, 0))
 
     def check_events(self):
         keys = pygame.key.get_pressed()
@@ -232,13 +292,12 @@ class Game():
             self.set_display()
 
         # mouse events
-        if pygame.mouse.get_pressed() == (1, 0, 0):
+        if pygame.mouse.get_pressed() != (0, 0, 0):
             self.cursor.active = True
         elif pygame.mouse.get_pressed() == (0, 0, 0):
             if self.cursor.active:
-                self.cursor.active = False
                 self.submit_stars()
-
+                self.cursor.active = False
 
 
     def update(self):
@@ -254,25 +313,22 @@ class Game():
         self.update_stars()
         self.stars.draw(self.screen)
         self.screen.blit(self.cursor.image, self.cursor.rect)
-
-        if self.timer > 0:#40
-            self.scoreboard.text = str(int(self.score))
-            self.scoreboard.update()
-            self.scoreboard.rect.right = self.screen_rect.width
-            self.screen.blit(self.scoreboard.image, self.scoreboard.rect)
-        else:
-            self.score = 0
-
-        self.fade_in()
+        self.show_score()
+        self.fade_screen()
         pygame.display.flip()
 
-    def make_star(self, pos, size="random"):
+        if self.timer >= self.ts["game_end"]:
+            self.main_running = False
+
+    def make_star(self, pos="random", size="random"):
         if size == "random":
             size = random.randint(5, 15)
+        elif size == "large":
+            size = random.randint(6, 8)
         elif size == "medium":
-            size = random.randint(5, 8)
-        elif size == "small":
             size = 5
+        elif size == "small":
+            size = 4
             
         if pos == "random":
             radius = int(size / 2)
@@ -286,7 +342,7 @@ class Game():
 
         return star
 
-    def make_cloud(self, pos, size="random"):
+    def make_cloud(self, pos="random", size="random", life="random"):
         if size == "random":
             size = random.randint(5, 100)
             radius = int(size / 2)
@@ -296,6 +352,9 @@ class Game():
                random.randint(0, self.screen.get_height()))
             
         cloud = Cloud(self, pos, size)
+        if life != "random":
+            life = life
+            
         self.clouds.add(cloud)
 
     def test_stars(self):
@@ -319,6 +378,7 @@ class Game():
             current state
         """
         self.stars.update(self.dt, self.cursor, self.stars)
+        self.star_timer += self.dt
 
         for star in self.stars:
             # check for active stars
@@ -340,38 +400,45 @@ class Game():
                     self.active_points.remove(star.rect.center)
 
             # check for dead stars
-            elif star.dead:
+            if star.dead:
                 if star in self.active_stars:
                     self.active_stars.remove(star)
                 if star.rect.center in self.active_points:
                     self.active_points.remove(star.rect.center)
                 self.stars.remove(star)
-            # REMOVE STARS THAT ARE OVERSHADOWED BY LARGER STARS
 
-        # make new stars less frequently based on timer
-        # BEING TAUGHT WORDS THE FIRST TIME
-        # LEARN TO USE WORDS INDIVIDUALLY
-        if self.timer > 5 and self.timer < 40:
-            self.star_delay = 5
-            self.star_timer += self.dt
+        # STAGE 1: small words arrive one at a time
+        if (self.timer > self.ts["star_1_start"] and
+            self.timer < self.ts["star_1_end"]):
+            self.star_delay = 9
             if self.star_timer >= self.star_delay:
                 self.star_timer = 0
-                self.make_star("random", size="small")
+                self.make_star(size="small")
                 
-        # MORE FREQUENT, LEARN TO STRING TOGETHER
-        elif self.timer > 30 and self.timer < 60:
-            self.star_delay = 7
-            self.star_timer += self.dt
+        # STAGE 2: learn to use
+        elif (self.timer > self.ts["star_2_start"] and
+            self.timer < self.ts["star_2_end"]):
+            self.star_delay = 6
             if self.star_timer >= self.star_delay:
                 self.star_timer = 0
-                self.make_star("random", size="medium")
+                self.make_star(size="medium")
+                
+        # STAGE 3: more focus on what's predetermined
+        elif (self.timer > self.ts["star_3_start"]):
+            self.star_delay = 3
+            if self.star_timer >= self.star_delay:
+                self.star_timer = 0
+                self.make_star(size="medium")
 
-        elif self.timer > 50:
-            self.star_delay = 15
-            self.star_timer += self.dt
-            if self.star_timer >= self.star_delay:
-                self.star_timer = 0
-                self.make_star("random", size="medium")
+        # ENDING
+        if self.timer > self.ts["end_event"]:
+            for star in self.stars:
+                self.make_cloud(star.rect.center, size=16, life=200)
+                self.make_cloud((self.screen_rect.width - 10, 8),
+                                size=16, life=200)
+                self.make_cloud(self.cursor.rect.center, size=16, life=200)
+
+                star.size = 3
 
     def update_clouds(self):
         """ maintains clouds based on
@@ -381,33 +448,36 @@ class Game():
         self.clouds.update(self.dt)
         self.cloud_timer += self.dt
 
-        # remove if dead/offscreen
+        # remove cloud if dead/offscreen
         for cloud in self.clouds:
             if cloud.dead:
                 self.clouds.remove(cloud)
         
-        # create new clouds based on timer
-        # NEW PERCEPTIONS AT BEGINNING
-        if self.timer > 3 and self.timer < 7:
+        # STAGE 1: burst of sensation
+        if (self.timer > self.ts["cloud_1_start"] and
+            self.timer < self.ts["cloud_1_end"]):
             self.cloud_delay = 0
             if self.cloud_timer >= self.cloud_delay:
                 self.cloud_timer = 0
-                for i in range(4):
-                    size = random.randint(5, 100)
-                    radius = int(size / 2)
-                    pos = (random.randint(0, self.screen.get_width()),
-                           random.randint(0, self.screen.get_height()))
-                    self.make_cloud(pos, size)
-        
-        if self.timer > 10:
+                for i in range(3):
+                    self.make_cloud()
+
+        # STAGE 2: less new sensation
+        elif (self.timer > self.ts["cloud_2_start"] and
+            self.timer < self.ts["cloud_2_end"]):
+            self.cloud_delay = random.randint(1, 4)
             if self.cloud_timer >= self.cloud_delay:
                 self.cloud_timer = 0
                 self.cloud_delay = random.uniform(0, 1)
-                size = random.randint(5, 100)
-                radius = int(size / 2)
-                pos = (random.randint(0, self.screen.get_width()),
-                       random.randint(0, self.screen.get_height()))
-                self.make_cloud(pos, size)
+                self.make_cloud()
+
+        # STAGE 3: rarely suprised
+        elif self.timer > self.ts["cloud_3_start"]:
+            self.cloud_delay = random.randint(6, 12)
+            if self.cloud_timer >= self.cloud_delay:
+                self.cloud_timer = 0
+                self.cloud_delay = random.uniform(0, 1)
+                self.make_cloud()
 
     def draw_lines(self):
         """ draws lines onscreen based on
@@ -427,76 +497,107 @@ class Game():
             currently selected stars
 
             - getting points make stars grow
-              and clouds fade
-
-            - the amount that stars grow depends
-              on the number and size of stars
-              submitted, as well as their
-              proximity to nearby clouds
-              (and number of clouds)
-
-            - the amount that clouds fade depends
-              on the above as well, this also
-              applies to points gained
-
-            - only clouds that are within the
-              lines drawn should be included,
-              i.e., the centroid
-
-            - amount of points gained is 
-              affected by the transparency
-              of the cloud
+              and clouds fades
 
             - if multiple stars are used in
               a submission, a new star will
               be created at the centroid of
-              those stars, ONLY if points
-              are gained
+              those stars
+
+            - if there is a collision between
+              a cloud and the central point,
+              points will be earned
+
+            - the amount of points earned
+              per cloud depends on the
+              number of active star
         """
         collided = False
-        
-        # find centroid of all active stars
+    
         if self.active_stars:
+            
+            # find center point of all active stars
             if len(self.active_stars) == 1:
                 centroid = self.active_points[0]
                 center_star = self.active_stars[0]
-                
+
+            # if multiple stars active, a new star is made
             elif len(self.active_stars) > 1:
-                # find centroid of all points
                 x = [p[0] for p in self.active_points]
                 y = [p[1] for p in self.active_points]
                 centroid = (sum(x) / len(self.active_points),
                             sum(y) / len(self.active_points))
                 center_star = self.make_star(centroid, size=4)
 
-            # check for contact with clouds
+            # check for collisions with clouds
             for cloud in self.clouds:
-                near_clouds = 0
-                '''
-                distance = int(math.hypot(centroid[0] - cloud.rect.centerx,
-                                  centroid[1] - cloud.rect.centery))
-                #if distance < cloud.radius:
-                '''
                 if pygame.sprite.collide_circle(center_star, cloud):
                     collided = True
-                    near_clouds += 1
-                    
-                    # update clouds, stars and score
-                    cloud.life -= 40
-                    
-                    # POINTS EARNED GOES UP WITH AGE (credibility?)
-                    self.score += int(self.timer /
-                            10 + near_clouds + len(self.active_stars))
-                    
-            for star in self.active_stars:
-                if collided:
-                    star.size += 2
 
-        # deactivate other active stars
+                    # update score
+                    points = int(5 / len(self.active_points))
+                    if points < 1:
+                        points = 1
+                    self.score += points
+
+                    # calculate position of score icon
+                    if center_star.rect.collidepoint(cloud.rect.center):
+                        pos = (center_star.rect.centerx,
+                           center_star.rect.y - center_star.rect.height)
+                    else:
+                        pos = cloud.rect.center
+                        
+                    self.show_new_score(points, pos)
+                    
+                    # update clouds
+                    cloud.life -= 60
+
+                    # play sound effect
+                    self.sound_effect.play()
+
+            # update stars
+            if collided:
+                for star in self.active_stars:
+                        star.size += 1
+                if len(self.active_stars) < 2:
+                    center_star.size += 1
+
+        # disable active stars
         self.active_stars.clear()
         self.active_points.clear()
         for star in self.stars:
             star.active = False
+
+    def show_score(self):
+        if self.timer > self.ts["score_start"]:
+            if not self.timer > self.ts["end_event"]:   
+                self.scoreboard.text = str(int(self.score))
+            else:
+                self.scoreboard.text = ""
+
+            self.scoreboard.update()
+            self.scoreboard.rect.right = self.screen_rect.width
+            self.scoreboard.rect.top = 0
+            self.screen.blit(self.scoreboard.image, self.scoreboard.rect)
+
+            self.labels.update()
+            self.labels.draw(self.screen)
+            for label in self.labels:
+                label.timer += 1 * self.dt
+                if label.timer >= 1:
+                    self.labels.remove(label)
+                    
+        else:
+            self.score = 0
+            self.labels.empty()
+
+    def show_new_score(self, points, pos):
+        """ displays a text icon near collision
+            to better display points earned
+        """
+        score = Label(self, "+" + str(points), size=30,
+                      pos=pos, color=(255, 150, 150))
+        self.labels.add(score)
 
   
 def main():
