@@ -1,0 +1,42 @@
+created by Andrew Durkee, music from www.bensound.com
+
+CONTROLS:
+ - press escape to exit game / return to start menu
+ - use "F" key to toggle full/windowed screen
+ - while in game, use mouse and mouse buttons
+
+
+I wanted to make a game about trying to describe something illusory.
+The struggle to convey a thought, a sensation, or any vague idea.
+I often find that the in the journey to represent something, 
+there will always be some change in translation.  It is also 
+inevitable that the original inspiration will irreversibly change, 
+turning the whole practice into a sort of soft dissection.  It is a
+process that can require great strength, while demanding to be 
+held with reverence.
+It seems like this is something we never really get away from, whether
+we know it or not. I hope to show the way we might pursue this over 
+our lives, at different ages, and with different amounts of luck.
+
+I hope you find it worth your time :)
+
+
+
+
+
+
+
+------WAIT! -------------------------------------------------------------
+BEFORE READING ABOUT THE GAME DETAILS, I RECOMMEND PLAYING THE
+GAME AT LEAST ONCE
+
+
+
+
+
+
+
+
+
+
+

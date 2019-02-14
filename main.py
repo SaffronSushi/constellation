@@ -1,8 +1,15 @@
 import pygame, random, math, sys, time
 from star import Star
 from cloud import Cloud
-# Start
-# End
+
+# look at length
+# pacing
+# name
+# finalize mechanics
+# deactivate star when clicked and still in cursor
+# generate clouds more often during middle portion of game timer
+# IN THE FACE OF THE MUSIC IS UNCERIMONIOUS CLICKING
+# like interupting the serenity of the exp for the creation
 
 class Cursor(pygame.sprite.Sprite):
     def __init__(self):
@@ -66,7 +73,7 @@ class Game():
         self.WINDOWED = 1
         self.DISPLAY_MODE = self.WINDOWED
 
-        pygame.display.set_caption("A Star At Dawn")
+        pygame.display.set_caption("Stars at Dawn")
         self.icon = pygame.image.load("images/const_logo.bmp")
         pygame.display.set_icon(self.icon)
         self.res = (800, 600)
@@ -96,32 +103,33 @@ class Game():
         pygame.mixer.music.load("audio/bensound-sadday.mp3")
         pygame.mixer.music.set_volume(0.2)
 
-        self.sound_effect = pygame.mixer.Sound("audio/point_sound.wav")
+        #self.sound_effect = pygame.mixer.Sound("audio/point_sound.wav")
+        #self.sound_effect.set_volume(0.4)
 
         # create timestamps for different game events
         self.ts = {
             "game_start":0,
-            "game_end":295,
+            "game_end":145, #295,
             
             "fade_in_end":10,
-            "fade_out_start":260,
+            "fade_out_start":130, #260,
             
             "star_1_start":0,
-            "star_1_end":30,
-            "star_2_start":30,
-            "star_2_end":175,
-            "star_3_start":175,
+            "star_1_end":20, #30,
+            "star_2_start":20, #30,
+            "star_2_end":120, #175,
+            "star_3_start":120,
             
             "cloud_1_start":0,
             "cloud_1_end":20,
             "cloud_2_start":20,
-            "cloud_2_end":200,
-            "cloud_3_start":200,
+            "cloud_2_end":120, #200,
+            "cloud_3_start":120, #200,
             
-            "score_start":50,
-            "score_end":265,
+            "score_start":30, #35,
+            "score_end": 130, #265,
             
-            "end_event":265
+            "end_event":130, #265
             }
 
     def start(self):
@@ -274,7 +282,7 @@ class Game():
         # game lasts 300 seconds
         elif self.timer > self.ts["fade_out_start"]:
             # roughly 40 second fade time
-            self.fg_alpha += 10 * self.dt
+            self.fg_alpha += 20 * self.dt
             if self.fg_alpha >= 255:
                 self.fg_alpha = 255
             self.fg.set_alpha(self.fg_alpha)
@@ -301,15 +309,13 @@ class Game():
 
 
     def update(self):
-        # update
         self.cursor.update()
         self.update_clouds()
 
-        # draw
         self.screen.blit(self.bg, (0, 0))
         self.clouds.draw(self.screen)
         self.draw_lines()
-        self.draw_poly()
+        #self.draw_poly()
         self.update_stars()
         self.stars.draw(self.screen)
         self.screen.blit(self.cursor.image, self.cursor.rect)
@@ -317,6 +323,7 @@ class Game():
         self.fade_screen()
         pygame.display.flip()
 
+        self.check_ending()
         if self.timer >= self.ts["game_end"]:
             self.main_running = False
 
@@ -342,7 +349,8 @@ class Game():
 
         return star
 
-    def make_cloud(self, pos="random", size="random", life="random"):
+    def make_cloud(self, pos="random", size="random",
+                   life="random", max_speed=""):
         if size == "random":
             size = random.randint(5, 100)
             radius = int(size / 2)
@@ -354,6 +362,8 @@ class Game():
         cloud = Cloud(self, pos, size)
         if life != "random":
             life = life
+        if max_speed != "":
+            cloud.max_speed = max_speed         
             
         self.clouds.add(cloud)
 
@@ -415,30 +425,20 @@ class Game():
                 self.star_timer = 0
                 self.make_star(size="small")
                 
-        # STAGE 2: learn to use
+        # STAGE 2
         elif (self.timer > self.ts["star_2_start"] and
             self.timer < self.ts["star_2_end"]):
-            self.star_delay = 6
+            self.star_delay = random.randint(2, 4)
             if self.star_timer >= self.star_delay:
                 self.star_timer = 0
                 self.make_star(size="medium")
                 
-        # STAGE 3: more focus on what's predetermined
+        # STAGE 3
         elif (self.timer > self.ts["star_3_start"]):
-            self.star_delay = 3
+            self.star_delay = random.randint(1, 3)
             if self.star_timer >= self.star_delay:
                 self.star_timer = 0
                 self.make_star(size="medium")
-
-        # ENDING
-        if self.timer > self.ts["end_event"]:
-            for star in self.stars:
-                self.make_cloud(star.rect.center, size=16, life=200)
-                self.make_cloud((self.screen_rect.width - 10, 8),
-                                size=16, life=200)
-                self.make_cloud(self.cursor.rect.center, size=16, life=200)
-
-                star.size = 3
 
     def update_clouds(self):
         """ maintains clouds based on
@@ -456,27 +456,27 @@ class Game():
         # STAGE 1: burst of sensation
         if (self.timer > self.ts["cloud_1_start"] and
             self.timer < self.ts["cloud_1_end"]):
-            self.cloud_delay = 0
+            self.cloud_delay = .1
             if self.cloud_timer >= self.cloud_delay:
                 self.cloud_timer = 0
                 for i in range(3):
                     self.make_cloud()
 
-        # STAGE 2: less new sensation
+        # STAGE 2
         elif (self.timer > self.ts["cloud_2_start"] and
             self.timer < self.ts["cloud_2_end"]):
             self.cloud_delay = random.randint(1, 4)
             if self.cloud_timer >= self.cloud_delay:
                 self.cloud_timer = 0
-                self.cloud_delay = random.uniform(0, 1)
+                self.cloud_delay = random.randint(0, 2)
                 self.make_cloud()
 
-        # STAGE 3: rarely suprised
+        # STAGE 3
         elif self.timer > self.ts["cloud_3_start"]:
             self.cloud_delay = random.randint(6, 12)
             if self.cloud_timer >= self.cloud_delay:
                 self.cloud_timer = 0
-                self.cloud_delay = random.uniform(0, 1)
+                self.cloud_delay = random.randint(1, 3)
                 self.make_cloud()
 
     def draw_lines(self):
@@ -528,7 +528,7 @@ class Game():
                 centroid = (sum(x) / len(self.active_points),
                             sum(y) / len(self.active_points))
                 center_star = self.make_star(centroid, size=4)
-
+                    
             # check for collisions with clouds
             for cloud in self.clouds:
                 if pygame.sprite.collide_circle(center_star, cloud):
@@ -553,7 +553,7 @@ class Game():
                     cloud.life -= 60
 
                     # play sound effect
-                    self.sound_effect.play()
+                    #self.sound_effect.play()
 
             # update stars
             if collided:
@@ -569,12 +569,9 @@ class Game():
             star.active = False
 
     def show_score(self):
-        if self.timer > self.ts["score_start"]:
-            if not self.timer > self.ts["end_event"]:   
-                self.scoreboard.text = str(int(self.score))
-            else:
-                self.scoreboard.text = ""
-
+        if (self.timer > self.ts["score_start"] and
+            self.timer < self.ts["end_event"]):
+            self.scoreboard.text = str(int(self.score))
             self.scoreboard.update()
             self.scoreboard.rect.right = self.screen_rect.width
             self.scoreboard.rect.top = 0
@@ -595,9 +592,22 @@ class Game():
         """ displays a text icon near collision
             to better display points earned
         """
+        
         score = Label(self, "+" + str(points), size=30,
                       pos=pos, color=(255, 150, 150))
         self.labels.add(score)
+
+    def check_ending(self):
+        """ updates all sprites near end of game """
+        # replace stars and scoreboard images with small clouds
+        if self.timer > self.ts["end_event"]:
+            for star in self.stars:
+                self.make_cloud(star.rect.center, size=16, life=200)
+                self.make_cloud((self.screen_rect.width - 10, 8),
+                                size=16, life=200)
+                self.make_cloud(self.cursor.rect.center, size=16,
+                                life=200, max_speed=100)
+                star.size = 3
 
   
 def main():

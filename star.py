@@ -18,13 +18,13 @@ class Star(pygame.sprite.Sprite):
         self.rect.center = pos
 
         self.dead = False
-        self.hit = False
         self.active = False
+        self.hit = False
         self.shrink_speed = .07
         self.min_size = 3
         self.max_size = 20
 
-        self.active_time = 1.5
+        self.active_time = 4
         self.timer = 0
 
     def update(self, delta_time, cursor, stars):
@@ -66,10 +66,11 @@ class Star(pygame.sprite.Sprite):
 
     def check_events(self, cursor):
         if pygame.sprite.collide_rect(cursor, self):
-            self.active = True
-            self.hit = True
-        else:
-            self.hit = False
+            if cursor.active:
+                self.active = True
+                self.hit = True
+            else:
+                self.hit = False
 
     def fade_in(self):
         if self.alpha < 255:

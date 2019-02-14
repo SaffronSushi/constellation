@@ -24,9 +24,9 @@ class Cloud(pygame.sprite.Sprite):
         self.max_life = 200
         self.life = random.randint(self.min_life, self.max_life)
         self.tick = random.uniform(0.01, 40)
-        self.max_speed = 10
-        self.dx = random.uniform(-(self.max_speed), self.max_speed)
-        self.dy = random.uniform(-(self.max_speed), self.max_speed)
+        self.max_speed = 5
+        self.dx = random.uniform(-self.max_speed, self.max_speed)
+        self.dy = random.uniform(-self.max_speed, self.max_speed)
         (self.x, self.y) = self.rect.center
 
     def update(self, delta_time):
