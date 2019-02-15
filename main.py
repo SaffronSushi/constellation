@@ -2,12 +2,6 @@ import pygame, random, math, sys, time
 from star import Star
 from cloud import Cloud
 
-# look at length
-# pacing
-# name
-# finalize mechanics
-# deactivate star when clicked and still in cursor
-# generate clouds more often during middle portion of game timer
 # IN THE FACE OF THE MUSIC IS UNCERIMONIOUS CLICKING
 # like interupting the serenity of the exp for the creation
 
@@ -29,6 +23,7 @@ class Cursor(pygame.sprite.Sprite):
 
         self.alpha = 0
         self.active = False
+        self.fade = True
 
     def update(self):
         if self.active :
@@ -40,10 +35,12 @@ class Cursor(pygame.sprite.Sprite):
         self.fade_in()
 
     def fade_in(self):
-        self.alpha += .5
-        if self.alpha > 200:
-            self.alpha = 200
-        self.image.set_alpha(self.alpha)
+        if self.fade:
+            self.alpha += .5
+            if self.alpha > 255:
+                self.alpha = 255
+                self.fade = False
+            self.image.set_alpha(self.alpha)
 
 class Label(pygame.sprite.Sprite):
     def __init__(self, game, text = "", size=40, pos=(0, 0), color=(255, 255, 255)):

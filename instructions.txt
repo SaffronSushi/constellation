@@ -3,15 +3,19 @@ created by Andrew Durkee, music from www.bensound.com
 CONTROLS:
  - press escape to exit game / return to start menu
  - use "F" key to toggle full/windowed screen
- - while in game, use mouse and mouse buttons
+
+ - while playing, move cursor with mouse
+ - click to select, release to submit selection
+   (I'll explain the above in more detail later)
 
 
 I wanted to make a game about trying to describe something illusory.
 The struggle to convey a thought, a sensation, or any vague idea.
+
 I often find that the in the journey to represent something, 
 there will always be some change in translation.  It is also 
 inevitable that the original inspiration will irreversibly change, 
-turning the whole practice into a sort of soft dissection.  It is a
+turning the whole practice into a sort of dissection.  It is a
 process that can require great strength, while demanding to be 
 held with reverence.
 It seems like this is something we never really get away from, whether
@@ -19,6 +23,11 @@ we know it or not. I hope to show the way we might pursue this over
 our lives, at different ages, and with different amounts of luck.
 
 I hope you find it worth your time :)
+
+
+
+
+
 
 
 
@@ -34,9 +43,54 @@ GAME AT LEAST ONCE
 
 
 
+___ELEMENTS___
+I made the floating red dots to represent the object of description / inspiration.
+These dots, which I will call "clouds", all vary in size, movement speed, and
+all brief to long lifespans.  These appear on their own, with no choice of our own
+(I think all ideas are like that on some level).
 
+The "stars" represent a means of communication / expression.  I best like to 
+think of then as words, alone or in a sentence.  These sometimes appear randomly, 
+especially at the start, and they always start somewhat small: it is up to you to 
+develop them, lest they dissapear.
 
+At some point, a score system will appear in the form of total points earned on a 
+scoreboard, and of icons showing the position and number of points earned.  Points 
+are earned by making connections between the stars and clouds.  The amount of 
+points earned depends on other variables which I'll talk about later.
 
+___RULES___
+When moving the cursor over a star (while clicked), a recticle appears over the star.
+Several stars can be selected at once, and while doing so, lines will be drawn between 
+them.  I like to think of this as if I'm looking for descriptive words in my head.
+When the mouse key is released, the selection of stars is "expressed" (or "spoken").
+
+Points are earned when stars that are selected (or the center thereof) are within the
+bounds of a cloud.  When this happens, The stars involved grow slightly, while the 
+cloud(s) lose visibility, and may eventually dissapear.  If there is a scoreboard, 
+points will be earned.  I think of this as describing something closely enough to 
+do it some justice.  In doing this, the "word" might gain value.  When the cloud
+starts to dissapear, I want to show how expressing something changes the idea itself.
+
+When multiple stars are submitted, a fragile new star is created at the center of the 
+others used, like how language has a tendency to condense commonly used phrases.
+
+The number of points gained is lessened when multiple stars are present, favoring 
+using the most concise selection possible (this may be more of a personal bias).
+
+___TIMELINE___
+Events change slightly over the course of the game.  In the beginning, stars are few
+and rarely learned, while a torrent of new sensation arises.  Later on, the storm 
+settles down, and stars appear more often.  As we adjust to life, we start to make
+connections with language.
+
+Soon after this, a point system is introduced.  Much of our success, especially later
+in life seems to be determined from our ability to communicate.
+
+Later in life, one's focus may turn more from the world as it is experienced, to one's 
+concepts of it.
+
+In the end, one might let go, and see the world as one first did.
 
 
 
